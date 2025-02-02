@@ -24,6 +24,8 @@ mv "${ARTEMIS_DIRECTORY_NAME}" "artemis"
 cp ../Containerfile .
 cp ../broker.sh .
 chmod 755 broker.sh
+cp ../broker-tls-reload.sh .
+chmod 755 broker-tls-reload.sh
 
 podman build \
 --format docker \

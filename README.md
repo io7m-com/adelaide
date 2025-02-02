@@ -58,6 +58,7 @@ by the `adelaide` images.
 
 * Runs rootless with a read-only root directory!
 * Version control your broker configuration files!
+* Easy TLS reloading for ACME.
 * ISC license.
 
 ## Usage
@@ -97,4 +98,102 @@ For extra security, run `podman run` with the `--read-only` option; the images
 are designed such that no part of the filesystem except for `/data` is required
 to be writable.
 
+### TLS Reloading
+
+The image provides a `/broker-tls-reload.sh` script that can be executed
+inside the container to instruct Artemis to reload TLS certificates. We'll
+assume that the broker container is being run under the `_artemis` user
+account on the host throughout this example.
+
+```
+# /broker-tls-reload.sh
+usage: user password broker-name acceptor-name
+```
+
+We'll start by assuming that we have some client on the host that knows how to
+write PEM-formatted certificates into some directory (any ACME client can do this).
+We'll then periodically (hourly is sufficient) convert those PEM-formatted
+certificates to a PKCS12 formatted keystore and write the keystore to a
+path that is visible to the broker running inside the container. We'll then
+tell the broker to reload its own keystore. The steps are as follows:
+
+1. Configure your broker to read a keystore from `/tls/brokerKeystore.pkcs12`.
+   For example, in the `broker.xml`:
+
+```
+  <acceptor name="artemis">
+    tcp://0.0.0.0:60000?protocols=AMQP;sslEnabled=true;keyStorePath=/tls/brokerKeystore.p12;keyStorePassword=changeit;trustStorePath=/opt/java/openjdk/lib/security/cacerts;trustStorePassword=changeit
+  </acceptor>
+```
+
+2. Write a script to generate `/tls/brokerKeystore.p12` from outside of the
+   container. For the sake of example, we'll refer to this script as
+   `/usr/local/bin/regenerate-keystore.sh` on the host. For example, if an ACME
+   client is placing certificates into the host directory
+   `/etc/certificates/example.com`, and the directory
+   `/containers/messaging01/tls` is mounted at `/tls` in the
+   container, then it is straightforward to write a script to produce a
+   PKCS12 keystore:
+
+```
+#!/bin/sh -ex
+
+CERTIFICATE_BASE="/etc/certificates/example.com"
+OUTPUT="/containers/messaging01/tls"
+
+openssl pkcs12 \
+  -export \
+  -out "${OUTPUT}/brokerKeystore.p12.tmp" \
+  -in "${CERTIFICATE_BASE}/full_chain.pem" \
+  -inkey "${CERTIFICATE_BASE}/private.key" \
+  -passout "pass:changeit"
+
+chown _artemis:_artemis "${OUTPUT}/brokerKeystore.p12.tmp"
+mv "${OUTPUT}/brokerKeystore.p12.tmp" "${OUTPUT}/brokerKeystore.p12"
+```
+
+3. Set up a service to periodically call the script to generate the keystore,
+   and then call `/broker-tls-reload.sh` inside the container to reload
+   certificates. In this example, we assume that the container is called
+   `messaging01`, and it exposes a broker called `Messaging01` with an
+   acceptor called `artemis`. It also has an admin user called `grouch`
+   with a password `some-very-long-password-here`. Naturally, all of these
+   values will likely be different for your particular broker installation.
+
+```
+[Unit]
+Description=Messaging01 TLS Service
+
+[Service]
+Type=oneshot
+User=_artemis
+Group=_artemis
+
+ExecStart=+/bin/sh /usr/local/bin/regenerate-keystore.sh
+ExecStart=/usr/bin/podman      \
+  exec                         \
+  -i                           \
+  -t                           \
+  messaging01                  \
+  /broker-tls-reload.sh        \
+  grouch                       \
+  some-very-long-password-here \
+  Messaging01                  \
+  artemis
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```
+[Unit]
+Description=Messaging01 TLS timer
+
+[Timer]
+OnCalendar=*-*-* *:00/59:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+```
 

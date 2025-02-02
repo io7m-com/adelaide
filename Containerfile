@@ -17,10 +17,13 @@ LABEL "org.opencontainers.image.version"="$version"
 
 RUN apk update
 RUN apk add ca-certificates-bundle
+RUN apk add curl
 
 COPY artemis /artemis
 COPY broker.sh /broker.sh
 RUN chmod 755 /broker.sh
+COPY broker-tls-reload.sh /broker-tls-reload.sh
+RUN chmod 755 /broker-tls-reload.sh
 
 RUN mkdir /data
 RUN mkdir /data/etc

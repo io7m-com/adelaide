@@ -1,0 +1,5 @@
+build
+KEYS
+apache-artemis-*-bin.tar.gz
+apache-artemis-*-bin.tar.gz.asc
+.idea

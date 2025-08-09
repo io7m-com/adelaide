@@ -7,7 +7,21 @@
   <version>1.0.0</version>
   <name>com.io7m.adelaide</name>
 
+  <description>Better ActiveMQ/Artemis OCI images.</description>
+
   <properties>
     <io7m.java.targetJavaVersion>23</io7m.java.targetJavaVersion>
   </properties>
+
+  <scm>
+    <url>https://www.github.com/io7m-com/adelaide</url>
+    <connection>scm:git:https://www.github.com/io7m-com/adelaide</connection>
+    <developerConnection>scm:git:https://www.github.com/io7m-com/adelaide</developerConnection>
+  </scm>
+
+  <issueManagement>
+    <url>https://www.github.com/io7m-com/adelaide/issues</url>
+    <system>GitHub Issues</system>
+  </issueManagement>
+
 </project>

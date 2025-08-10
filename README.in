@@ -7,10 +7,10 @@ images.
 ## Motivation
 
 The existing Artemis OCI images have a number of problems that are addressed
-by the `adelaide` images. Problems with the original images include:
+by the `adelaide` images.
 
-* The images expect users to generate configuration files and then use them
-  in the broker instances. This makes the container the "owner" of the
+* The original images expect users to generate configuration files and then use
+  them in the broker instances. This makes the container the "owner" of the
   configuration files instead of the files being a read-only input to the
   container, and makes it difficult to keep them in version control.
   Additionally, the images seem to be designed under the assumption that a user

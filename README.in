@@ -7,7 +7,7 @@ images.
 ## Motivation
 
 The existing Artemis OCI images have a number of problems that are addressed
-by the `adelaide` images.
+by the `adelaide` images. Problems with the original images include:
 
 * The images expect users to generate configuration files and then use them
   in the broker instances. This makes the container the "owner" of the
